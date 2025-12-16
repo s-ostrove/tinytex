@@ -6,6 +6,9 @@ on:
 
 name: Build TinyTeX Bundles
 
+permissions:
+  contents: write
+
 # env:
 # for gh usage with external repo
 # GH_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
@@ -61,11 +64,6 @@ jobs:
         with:
           extra-packages: local::., any::rmarkdown
 
-      - name: Update all packages
-        run: |
-          try(update.packages(ask = FALSE, checkBuilt = TRUE))
-        shell: Rscript {0}
-
       - name: Build texlive-local-deb
         run: |
           sudo apt install -y equivs
@@ -91,11 +89,6 @@ jobs:
         run: |
           Rscript "tools/test-basic.R"
           tar zcf TinyTeX.tar.gz -C ~ .TinyTeX
-
-      - name: Export Regex file
-        run: |
-          Rscript "tools/export-regex.R"
-          tar zcf regex.tar.gz regex.json
 
       - name: Build *nix installer bundle
         working-directory: tools
@@ -127,43 +120,10 @@ jobs:
           max_attempts: 5
           retry_wait_seconds: 10
           command: |
-            gh release upload ${{needs.new-release.outputs.draft-tag}} TinyTeX-0.tar.gz TinyTeX-1.tar.gz TinyTeX.tar.gz installer-unix.tar.gz regex.tar.gz texlive-local.deb --clobber
-
-  tinitex:
-    needs: [new-release]
-    name: Get tinitex release
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Get tinytex artifacts
-        run: |
-          echo ">> Will retrieve artifact from Quarto latexmk workflow"
-          runId=$(gh run -R quarto-dev/quarto-cli list -w 'Test quarto-latexmk' --json 'headBranch,conclusion,databaseId' --jq 'map(select(.conclusion == "success" and .headBranch == "main")) | .[0].databaseId')
-          gh run -R quarto-dev/quarto-cli download $runId -p tinitex-* --dir tinitex
-        shell: bash
-
-      - name: Repackage in per OS bundle
-        working-directory: tinitex
-        run: |
-          pushd $(find . -maxdepth 1 -type d -name "*ubuntu*")
-          7z a -ttar -so tinitex.tar x86_64-unknown-linux-gnu/. | 7z a -si -o.. tinitex.tar.gz
-          mv tinitex.tar.gz ..
-          popd
-
-      - run: ls -lisa tinitex
-
-      - name: Upload bundles
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 5
-          max_attempts: 5
-          retry_wait_seconds: 10
-          command: |
-            cd tinitex/
-            gh release upload ${{needs.new-release.outputs.draft-tag}} tinitex.zip tinitex.tgz tinitex.tar.gz --clobber
+            gh release upload ${{needs.new-release.outputs.draft-tag}} TinyTeX-0.tar.gz TinyTeX-1.tar.gz TinyTeX.tar.gz installer-unix.tar.gz texlive-local.deb --clobber
 
   deploy:
-    needs: [new-release, build-linux, tinitex]
+    needs: [new-release, build-linux]
     runs-on: ubuntu-latest
     name: Publish new daily release
 
@@ -171,7 +131,7 @@ jobs:
       - name: Create release note
         run: |
           echo "This release contains the daily build of TinyTeX ($(date +'%A %B %d %Y %r %Z'))." > notes.md
-          echo "Please see https://github.com/rstudio/tinytex-releases for more info." >> notes.md
+          echo "Please see this repository for more info." >> notes.md
           echo "" >> notes.md
           echo "## TeX Live version" >> notes.md
           echo "" >> notes.md
@@ -183,8 +143,8 @@ jobs:
 
       - name: Publish new release
         run: |
-          echo "::group::Move tag to last commit on master"
-          sha=$(gh api repos/{owner}/{repo}/git/ref/heads/master --jq '.object.sha')
+          echo "::group::Move tag to last commit on main"
+          sha=$(gh api repos/{owner}/{repo}/git/ref/heads/main --jq '.object.sha')
           gh api repos/{owner}/{repo}/git/refs/tags/daily -f sha=$sha --template 'Tag {{.ref | color "blue"}} moved on commit sha {{.object.sha | color "blue"}}.'
           echo -e "\n::endgroup::"
           echo "::group::undraft new and delete current release"
