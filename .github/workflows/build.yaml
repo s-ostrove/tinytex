@@ -28,6 +28,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
 
     steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
       - name: Create new draft release
         id: draft
         run: |
@@ -135,6 +138,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
 
     steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
       - name: Create release note
         run: |
           echo "This release contains the daily build of TinyTeX ($(date +'%A %B %d %Y %r %Z'))." > notes.md
@@ -170,6 +176,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
 
     steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
       - name: Remove unused daily release
         run: |
           gh release delete ${{needs.new-release.outputs.draft-tag}} -y
