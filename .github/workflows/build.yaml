@@ -24,6 +24,9 @@ jobs:
       tag: ${{ steps.draft.outputs.tag }}
       draft-tag: ${{ steps.draft.outputs.draft-tag }}
 
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Create new draft release
         id: draft
@@ -43,6 +46,7 @@ jobs:
     env:
       CTAN_REPO: https://ctan.math.illinois.edu/systems/texlive/tlnet
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Clone repo
@@ -127,6 +131,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Publish new daily release
 
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Create release note
         run: |
@@ -158,6 +165,10 @@ jobs:
     if: ${{ failure() || cancelled() }}
     runs-on: ubuntu-latest
     name: Cleaning step in case of error
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Remove unused daily release
         run: |
