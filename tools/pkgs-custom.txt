@@ -109,7 +109,7 @@ forloop
 listofitems
 nth
 tcolorbox
-tikz
+pgf
 pgfplots
 siunitx
 tikzfill
@@ -121,7 +121,6 @@ textcase
 soul
 textgreek
 mathtools
-nccmath
 hyphenat
 fancyhdr
 ncctools
