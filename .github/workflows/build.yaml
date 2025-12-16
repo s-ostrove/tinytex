@@ -156,16 +156,19 @@ jobs:
 
       - name: Publish new release
         run: |
-          echo "::group::Move tag to last commit on main"
+          echo "::group::Create or move tag to last commit on main"
           sha=$(gh api repos/{owner}/{repo}/git/ref/heads/main --jq '.object.sha')
           # Try to move existing tag, or create it if it doesn't exist
           if gh api repos/{owner}/{repo}/git/refs/tags/daily 2>/dev/null; then
+            # Tag exists, move it
             gh api repos/{owner}/{repo}/git/refs/tags/daily -f sha=$sha --template 'Tag {{.ref | color "blue"}} moved on commit sha {{.object.sha | color "blue"}}.'
           else
-            echo "Tag 'daily' does not exist yet, it will be created with the release"
+            # Tag doesn't exist, create it
+            echo "Tag 'daily' does not exist yet, creating it"
+            gh api repos/{owner}/{repo}/git/refs -X POST -f ref=refs/tags/daily -f sha=$sha
           fi
           echo -e "\n::endgroup::"
-          echo "::group::undraft new and delete current release"
+          echo "::group::Undraft new release and delete old one"
           # Try to find and delete old release, if it exists
           if old=$(gh release edit ${{needs.new-release.outputs.tag}} --draft=true 2>/dev/null | grep -o tag/[^/]*$ | cut -c 5-); then
             gh release edit ${{needs.new-release.outputs.draft-tag}} --draft=false --notes-file notes.md
