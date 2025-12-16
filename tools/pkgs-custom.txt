@@ -132,3 +132,4 @@ cbfonts
 mathpazo
 poormanlog
 multicol
+qrcode
